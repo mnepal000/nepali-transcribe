@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NepaliVani — Nepali Audio Transcription with Time Codes</title>
+<meta name="description" content="Transcribe Nepali audio in your browser with time-coded segments. Free, private, no uploads. Download SRT, VTT, TXT or JSON.">
+<link rel="stylesheet" href="styles.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1430'/%3E%3Cg stroke='%23f0b429' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M14 26v12M24 20v24M34 14v36M44 22v20M54 28v8'/%3E%3C/g%3E%3C/svg%3E">
+</head>
+<body>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#141b3d"/><g stroke="#f0b429" stroke-width="5" stroke-linecap="round"><path d="M14 26v12M24 20v24M34 14v36M44 22v20M54 28v8"/></g></svg>
+    <div>
+      <div class="brand-name">NepaliVani <span class="brand-ne">नेपाली वाणी</span></div>
+      <div class="brand-sub" data-i18n="tagline">Nepali audio transcription with time codes</div>
+    </div>
+  </div>
+  <nav class="lang-toggle" aria-label="Language">
+    <button id="lang-en" class="lang-btn active" type="button">EN</button>
+    <button id="lang-ne" class="lang-btn" type="button">ने</button>
+  </nav>
+</header>
+
+<main>
+  <!-- Upload -->
+  <section class="card" id="upload-card">
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload audio">
+      <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="dz-title" data-i18n="dropTitle">Drop your audio here</div>
+      <div class="dz-sub" data-i18n="dropSub">or click to browse — MP3, WAV, M4A, OGG, WEBM</div>
+      <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm,.mp4,.flac" hidden>
+    </div>
+    <div class="row between">
+      <button class="btn ghost" id="sample-btn" type="button" data-i18n="trySample">Try a Nepali sample clip</button>
+      <div class="privacy"><span class="lock">🔒</span> <span data-i18n="privacy">Private by design: transcription runs 100% in your browser. Your audio never leaves this device.</span></div>
+    </div>
+  </section>
+
+  <!-- Job -->
+  <section class="card" id="job-card" hidden>
+    <div class="file-meta">
+      <div class="file-icon">🎧</div>
+      <div class="file-info">
+        <div class="file-name" id="file-name">—</div>
+        <div class="file-sub"><span id="file-duration">—</span> · <span id="file-size">—</span></div>
+      </div>
+      <button class="btn ghost small" id="change-file" type="button" data-i18n="changeFile">Change file</button>
+    </div>
+
+    <div class="controls">
+      <label class="ctl">
+        <span data-i18n="modelLabel">Model</span>
+        <select id="model-select">
+          <option value="onnx-community/whisper-large-v3-turbo" data-i18n="modelTurbo">Whisper Large v3 Turbo — best accuracy</option>
+          <option value="onnx-community/whisper-small" data-i18n="modelSmall">Whisper Small — faster, smaller</option>
+        </select>
+      </label>
+      <button class="btn primary" id="transcribe-btn" type="button" data-i18n="transcribe">Transcribe</button>
+    </div>
+    <div class="model-note" data-i18n="modelNote">The model downloads once (Turbo ≈ 810 MB, Small ≈ 250 MB) and is cached in your browser afterwards. Turbo is recommended for Nepali accuracy.</div>
+
+    <div class="progress-wrap" id="progress-wrap" hidden>
+      <div class="progress-stage" id="progress-stage">…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-sub" id="progress-sub"></div>
+    </div>
+    <div class="error" id="error-box" hidden></div>
+  </section>
+
+  <!-- Results -->
+  <section class="card" id="results-card" hidden>
+    <div class="results-head">
+      <h2><span data-i18n="transcript">Transcript</span> <span class="count" id="seg-count"></span></h2>
+      <div class="hint" data-i18n="seekHint">Click a time code to jump · double-click text to edit</div>
+    </div>
+
+    <audio id="player" controls preload="auto"></audio>
+
+    <div class="toolbar">
+      <button class="btn small" id="copy-btn" type="button" data-i18n="copy">Copy</button>
+      <div class="dl-group">
+        <span class="dl-label" data-i18n="download">Download</span>
+        <button class="btn small ghost" id="dl-srt" type="button">SRT</button>
+        <button class="btn small ghost" id="dl-vtt" type="button">VTT</button>
+        <button class="btn small ghost" id="dl-txt" type="button">TXT</button>
+        <button class="btn small ghost" id="dl-json" type="button">JSON</button>
+      </div>
+      <button class="btn small danger-ghost" id="clear-btn" type="button" data-i18n="clear">Clear</button>
+    </div>
+
+    <ol class="segments" id="segments"></ol>
+  </section>
+
+  <section class="card how">
+    <h2 data-i18n="howTitle">How it works</h2>
+    <ol class="how-list">
+      <li data-i18n="how1"><b>Upload</b> a Nepali audio clip (interview, speech, song, voice note).</li>
+      <li data-i18n="how2"><b>Transcribe</b> with OpenAI's Whisper running locally in your browser via WebGPU.</li>
+      <li data-i18n="how3"><b>Review</b> time-coded segments, click any time code to jump, edit text inline.</li>
+      <li data-i18n="how4"><b>Export</b> as SRT/VTT subtitles, timestamped TXT, or JSON.</li>
+    </ol>
+    <p class="fine" data-i18n="howFine">Long recordings are processed in 30-second windows. Very long files (1 hr+) are best on a desktop with WebGPU; the smaller model is faster on modest devices. Nothing is uploaded anywhere.</p>
+  </section>
+</main>
+
+<footer>
+  <span>NepaliVani · <span data-i18n="footerNote">built with Whisper, running entirely on your device</span></span>
+</footer>
+
+<script type="module" src="app.js?v=1"></script>
+</body>
+</html>
