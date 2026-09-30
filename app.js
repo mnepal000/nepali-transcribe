@@ -27,7 +27,7 @@ const STR = {
     how2: '<b>Transcribe</b> with Whisper running locally in your browser via WebGPU.',
     how3: '<b>Review</b> time-coded segments, click any time code to jump, edit text inline.',
     how4: '<b>Export</b> as SRT/VTT subtitles, timestamped TXT, or JSON.',
-    howFine: 'Long recordings are processed in 30-second windows. Very long files (1 hr+) work best on a desktop with WebGPU; the smaller model is faster on modest devices. Nothing is uploaded anywhere.',
+    howFine: 'Long recordings are processed in 30-second windows. An hour of audio takes roughly 10-30 minutes on a modern laptop with WebGPU (much longer on phones or without GPU acceleration), so keep this tab open while it works. The smaller model is faster on modest devices. Nothing is uploaded anywhere.',
     footerNote: 'built with Whisper, running entirely on your device',
     stageDownload: 'Downloading model',
     stageDecode: 'Preparing audio',
@@ -65,7 +65,7 @@ const STR = {
     how2: '<b>ट्रान्सक्राइब</b> गर्नुहोस्: Whisper तपाईंको ब्राउजरमै WebGPU मार्फत चल्छ।',
     how3: '<b>समीक्षा</b> गर्नुहोस् टाइम कोडसहितका खण्डहरू, जम्प गर्न कुनै पनि टाइम कोडमा क्लिक गर्नुहोस्, टेक्स्ट सिधै सम्पादन गर्नुहोस्।',
     how4: '<b>एक्सपोर्ट</b> गर्नुहोस् SRT/VTT सबटाइटल, टाइम कोडसहितको TXT, वा JSON का रूपमा।',
-    howFine: 'लामो रेकर्डिङहरू ३०-सेकेन्डका विन्डोहरूमा प्रशोधन गरिन्छ। धेरै लामो फाइलहरू (१ घण्टाभन्दा बढी) WebGPU भएको डेस्कटपमा उत्तम हुन्छन्; सामान्य डिभाइसमा सानो मोडेल छिटो हुन्छ। केही पनि अपलोड हुँदैन।',
+    howFine: 'लामो रेकर्डिङहरू ३०-सेकेन्डका विन्डोहरूमा प्रशोधन गरिन्छ। WebGPU भएको आधुनिक ल्यापटपमा एक घण्टाको अडियो करिब १०-३० मिनेट लाग्छ (फोन वा GPU नभएकोमा धेरै लामो), त्यसैले काम भइरहँदा यो ट्याब खुला राख्नुहोस्। सामान्य डिभाइसमा सानो मोडेल छिटो हुन्छ। केही पनि अपलोड हुँदैन।',
     footerNote: 'Whisper बाट निर्मित, पूर्ण रूपमा तपाईंको डिभाइसमा चल्ने',
     stageDownload: 'मोडेल डाउनलोड हुँदैछ',
     stageDecode: 'अडियो तयार हुँदैछ',
@@ -223,6 +223,16 @@ async function decodeTo16k(file) {
 /* ------------------------------ transcription ----------------------------- */
 let transcriber = null, loadedModelId = null;
 
+// Keep the device awake and guard against accidental tab closes during
+// long transcriptions (e.g. hour-long clips).
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator) return await navigator.wakeLock.request('screen');
+  } catch (e) { /* unsupported or denied; transcription still works */ }
+  return null;
+}
+const confirmLeave = (e) => { e.preventDefault(); e.returnValue = ''; };
+
 function setProgress(stage, frac, sub) {
   $('progress-wrap').hidden = false;
   $('progress-stage').textContent = stage;
@@ -280,9 +290,11 @@ $('transcribe-btn').addEventListener('click', async () => {
   const btn = $('transcribe-btn');
   btn.disabled = true;
   $('error-box').hidden = true;
-  let timer = null;
+  let timer = null, wakeLock = null;
+  window.addEventListener('beforeunload', confirmLeave);
   try {
     setProgress(t('stageDecode'), null, '');
+    wakeLock = await acquireWakeLock();
     const audio = await decodeTo16k(audioFile);
     if (!audio || audio.length < 1600) throw new Error(t('errDecode'));
 
@@ -332,6 +344,8 @@ $('transcribe-btn').addEventListener('click', async () => {
     $('progress-wrap').hidden = true;
   } finally {
     btn.disabled = false;
+    window.removeEventListener('beforeunload', confirmLeave);
+    if (wakeLock) { try { await wakeLock.release(); } catch (e) {} }
   }
 });
 
