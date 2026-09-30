@@ -2,7 +2,8 @@
 
 A private, in-browser web app that transcribes Nepali audio with time codes.
 Upload an audio clip, get timestamped segments, click any time code to jump,
-edit inline, and export as SRT / VTT / TXT / JSON.
+edit inline, and export as SRT / VTT / TXT / JSON. A Quality selector offers
+Standard (fast, greedy decoding) or High accuracy (slower, 5-beam search).
 
 **Live:** https://mnepal000.github.io/nepali-transcribe/
 

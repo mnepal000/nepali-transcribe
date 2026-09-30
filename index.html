@@ -59,6 +59,13 @@
           <option value="onnx-community/whisper-small" data-i18n="modelSmall">Whisper Small — faster, smaller</option>
         </select>
       </label>
+      <label class="ctl">
+        <span data-i18n="qualityLabel">Quality</span>
+        <select id="quality-select">
+          <option value="standard" data-i18n="qualityStandard">Standard (fast)</option>
+          <option value="best" data-i18n="qualityBest">High accuracy (slower)</option>
+        </select>
+      </label>
       <button class="btn primary" id="transcribe-btn" type="button" data-i18n="transcribe">Transcribe</button>
     </div>
     <div class="model-note" data-i18n="modelNote">The model downloads once (Turbo ≈ 810 MB, Small ≈ 250 MB) and is cached in your browser afterwards. Turbo is recommended for Nepali accuracy.</div>

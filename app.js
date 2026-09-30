@@ -13,6 +13,9 @@ const STR = {
     modelTurbo: 'Whisper Large v3 Turbo (best accuracy)',
     modelSmall: 'Whisper Small (faster, smaller)',
     modelNote: 'The model downloads once (Turbo about 810 MB, Small about 250 MB) and is cached in your browser afterwards. Turbo is recommended for Nepali accuracy.',
+    qualityLabel: 'Quality',
+    qualityStandard: 'Standard (fast)',
+    qualityBest: 'High accuracy (slower)',
     transcribe: 'Transcribe',
     transcript: 'Transcript',
     seekHint: 'Click a time code to jump. Double-click text to edit.',
@@ -48,6 +51,9 @@ const STR = {
     modelTurbo: 'Whisper Large v3 Turbo (उत्तम शुद्धता)',
     modelSmall: 'Whisper Small (छिटो, सानो)',
     modelNote: 'मोडेल एकपटक डाउनलोड हुन्छ (Turbo करिब ८१० MB, Small करिब २५० MB) र त्यसपछि तपाईंको ब्राउजरमा सुरक्षित रहन्छ। नेपाली शुद्धताका लागि Turbo सिफारिस गरिन्छ।',
+    qualityLabel: 'गुणस्तर',
+    qualityStandard: 'सामान्य (छिटो)',
+    qualityBest: 'उच्च शुद्धता (ढिलो)',
     transcribe: 'ट्रान्सक्राइब गर्नुहोस्',
     transcript: 'प्रतिलिपि',
     seekHint: 'जम्प गर्न टाइम कोडमा क्लिक गर्नुहोस्। सम्पादन गर्न टेक्स्टमा डबल-क्लिक गर्नुहोस्।',
@@ -296,6 +302,9 @@ $('transcribe-btn').addEventListener('click', async () => {
       return_timestamps: true,
       language: 'nepali',
       task: 'transcribe',
+      // Beam search decodes 5 candidates per chunk and keeps the best one:
+      // measurably better spelling/word choice, but noticeably slower.
+      ...(($('quality-select')?.value === 'best') ? { num_beams: 5 } : {}),
     });
 
     clearInterval(timer); timer = null;
